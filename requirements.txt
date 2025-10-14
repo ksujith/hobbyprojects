@@ -1,0 +1,6 @@
+crewai-tools>=0.1.6
+crewai>=0.1.32
+langchain_openai>=0.1.7
+python-dotenv>=1.0.0
+ipython>=8.18.1
+click>=8.1.7
