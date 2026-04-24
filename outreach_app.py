@@ -18,7 +18,7 @@ import os
 from pydantic import BaseModel
 
 # Initialize FastAPI app
-app = FastAPI(title="Customer Outreach AI Agent", description="CrewAI Powered Outreach System")
+app = FastAPI(title="Customer Outreach AI Agent", description="AI Powered Outreach System")
 
 # Database initialization
 DATABASE_PATH = "outreach_campaigns.db"
@@ -109,9 +109,9 @@ class AgentTask(BaseModel):
     status: str
     details: Optional[str] = None
 
-# Simulated AI Agent Processing (replacing actual CrewAI for demo)
+# Simulated AI Agent Processing (replacing actual AICRM for demo)
 class MockAIAgent:
-    """Mock AI agent that simulates CrewAI behavior for demo purposes"""
+    """Mock AI agent that simulates AICRM behavior for demo purposes"""
     
     @staticmethod
     async def simulate_sales_rep_analysis(campaign_data: Dict) -> Dict:
@@ -141,9 +141,9 @@ class MockAIAgent:
 
 I hope this message finds you well. I wanted to take a moment to congratulate you and the entire {campaign_data['company_name']} team on your recent {campaign_data['milestone']}. Your commitment to advancing innovation in the {campaign_data['industry']} space continues to inspire industry leaders and drive meaningful change.
 
-At CrewAI, we resonate deeply with your vision and the strategic direction you're taking. We develop tailored AI-powered solutions designed to meet the specific demands of innovative organizations like yours, helping to streamline processes, enhance decision-making, and accelerate growth.
+At AICRM, we resonate deeply with your vision and the strategic direction you're taking. We develop tailored AI-powered solutions designed to meet the specific demands of innovative organizations like yours, helping to streamline processes, enhance decision-making, and accelerate growth.
 
-We believe that a collaboration between {campaign_data['company_name']} and CrewAI could significantly amplify the impact of your recent initiatives. Together, we can push the boundaries of what's possible and create even more value for your customers and stakeholders.
+We believe that a collaboration between {campaign_data['company_name']} and AICRM could significantly amplify the impact of your recent initiatives. Together, we can push the boundaries of what's possible and create even more value for your customers and stakeholders.
 
 I would love the opportunity to discuss how our solutions can support your current objectives and help you achieve your future goals. Please let me know a convenient time for a brief conversation.
 
@@ -151,7 +151,7 @@ Best regards,
 
 [Your Name]
 [Your Position]
-CrewAI Solutions Team"""
+AICRM Solutions Team"""
 
         return {
             "subject": f"Congratulations on Your Recent {campaign_data['milestone']}!",
@@ -726,7 +726,7 @@ def get_main_html() -> str:
         <div class="header-bar">
             <div>
                 <h1>Customer Outreach AI Agent</h1>
-                <div class="subtitle">CrewAI Powered Outreach System</div>
+                <div class="subtitle">AI Powered Outreach System</div>
             </div>
             <div>
                 <button class="btn btn-secondary" onclick="showHistory()">📄 History</button>
@@ -793,7 +793,7 @@ def get_main_html() -> str:
         <!-- Processing Status -->
         <div id="processingStatus" class="progress-container">
             <div class="loading-spinner"></div>
-            <h2>🤖 AI Crew Working...</h2>
+            <h2>🤖 AICRM Working...</h2>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressBar"></div>
             </div>

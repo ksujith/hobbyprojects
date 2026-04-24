@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "campaign"
+version = "0.2.0"
+description = "Production-grade B2B outreach agent — LeadAnalyzer, CompanyLookup, OutreachDrafter, DraftRefiner, CalendaringDetector"
+readme = "README_V2.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "alembic>=1.14",
+    "asyncpg>=0.30",
+    "aiosqlite>=0.20",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "structlog>=25.1",
+    "httpx>=0.28",
+    "tenacity>=9.0",
+    "arq>=0.26",
+    "redis>=5.2",
+    "anthropic>=0.42",
+    "prometheus-client>=0.21",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-redis",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/campaign"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "E501",
+    "B008",    # FastAPI Depends() idiom
+    "RUF002",  # unicode in docstrings is intentional
+    "RUF012",  # SQLAlchemy mutable class attrs
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["arq.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
