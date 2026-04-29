@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Campaign v2 — B2B Outreach Agent</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="app-head">
+      <div>
+        <h1>Campaign v2 <span class="v">— B2B Outreach Agent</span></h1>
+        <p class="sub">Outbound intelligence: persona → lead → analysis → draft → send → reply.</p>
+      </div>
+      <span id="cost-badge" class="cost-badge" title="Total LLM cost this session">$0.000000</span>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="campaigns" role="tab">Campaigns</button>
+      <button class="tab" data-tab="inbox" role="tab">
+        Inbox <span id="inbox-badge" class="badge-dot" hidden></span>
+      </button>
+      <button class="tab" data-tab="personas" role="tab">Personas</button>
+      <button class="tab" data-tab="cost" role="tab">Cost</button>
+    </nav>
+
+    <!-- ─────────────────────────── CAMPAIGNS ─────────────────────────── -->
+    <section id="tab-campaigns" class="tab-panel active">
+      <div id="persona-panel" class="card" hidden>
+        <h2 style="margin-top:0">New sender persona</h2>
+        <form id="pform">
+          <input id="p_name" placeholder="Persona name" required />
+          <input id="p_title" placeholder="Your title" required />
+          <input id="p_company" placeholder="Your company" class="span-2" required />
+          <textarea id="p_tone" class="span-2" placeholder="Tone guidelines (optional)"></textarea>
+          <div class="span-2 row">
+            <button type="submit">Save persona</button>
+            <button id="cancel-persona" type="button" class="ghost">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <h2>Start a campaign</h2>
+          <div class="card">
+            <form id="camp-form">
+              <select id="persona_id" required></select>
+              <input id="industry" placeholder="Industry" required />
+              <input id="company_name" placeholder="Company name" required class="span-2" />
+              <input id="decision_maker" placeholder="Decision maker (name)" required />
+              <input id="position" placeholder="Position / title" required />
+              <textarea id="milestone" class="span-2" placeholder="Recent milestone (e.g. Series B funding, product launch)" required></textarea>
+              <input id="prospect_email" type="email" class="span-2" placeholder="Prospect email (optional)" />
+              <div class="span-2 row">
+                <button id="go" type="submit">Run campaign</button>
+                <button id="new-persona" type="button" class="ghost">+ new persona</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <h2>Recent runs</h2>
+          <div class="card" id="runs"></div>
+        </div>
+      </div>
+
+      <div id="campaign-detail"></div>
+    </section>
+
+    <!-- ─────────────────────────── INBOX ─────────────────────────── -->
+    <section id="tab-inbox" class="tab-panel">
+      <div class="row-between">
+        <h2 style="margin:0">Inbox</h2>
+        <label class="toggle">
+          <input id="inbox-filter" type="checkbox" /> Needs action only
+        </label>
+      </div>
+      <div class="card" id="inbox-list"></div>
+    </section>
+
+    <!-- ─────────────────────────── PERSONAS / SETTINGS ─────────────────────────── -->
+    <section id="tab-personas" class="tab-panel">
+      <h2 style="margin-top:0">Personas &amp; settings</h2>
+      <div class="card" id="personas-list"></div>
+    </section>
+
+    <!-- ─────────────────────────── COST ─────────────────────────── -->
+    <section id="tab-cost" class="tab-panel">
+      <h2 style="margin-top:0">LLM cost ledger</h2>
+      <p class="muted">Per-caller aggregate. Empty in demo mode — no real API calls.</p>
+      <div class="card" id="cost-list"></div>
+    </section>
+  </div>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

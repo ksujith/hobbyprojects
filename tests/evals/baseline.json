@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "id": "high-priority-funding",
+      "priority": "high",
+      "fit_score": 0.82,
+      "personalization": 100,
+      "sentiment": 0.9,
+      "words": 67,
+      "mentions_company": true,
+      "mentions_decision_maker": true,
+      "mentions_milestone": true
+    },
+    {
+      "id": "medium-priority-hire",
+      "priority": "medium",
+      "fit_score": 0.68,
+      "personalization": 100,
+      "sentiment": 0.9,
+      "words": 68,
+      "mentions_company": true,
+      "mentions_decision_maker": true,
+      "mentions_milestone": true
+    },
+    {
+      "id": "high-priority-ipo",
+      "priority": "high",
+      "fit_score": 0.82,
+      "personalization": 100,
+      "sentiment": 0.9,
+      "words": 65,
+      "mentions_company": true,
+      "mentions_decision_maker": true,
+      "mentions_milestone": true
+    }
+  ]
+}

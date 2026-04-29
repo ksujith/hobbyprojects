@@ -108,6 +108,60 @@ class StartCampaign(_Base):
     lead: LeadIn
 
 
+# ---- Inbound message (emailbox) ----
+
+
+ReplyClass = Literal[
+    "positive_interest", "needs_info", "not_interested", "bounce", "out_of_office", "other"
+]
+
+
+class InboundMessageIn(_Base):
+    from_email: EmailStr
+    from_name: str | None = None
+    subject: Annotated[str, Field(min_length=1, max_length=512)]
+    body: Annotated[str, Field(min_length=1)]
+
+
+class InboundMessageOut(_Base):
+    id: str
+    campaign_id: str
+    from_email: str
+    from_name: str | None
+    subject: str
+    body: str
+    received_at: datetime
+    classification: ReplyClass
+    confidence: float
+    needs_action: bool
+    suggested_reply_draft_id: str | None
+
+
+# ---- EA settings ----
+
+
+class EASettingsIn(_Base):
+    enabled: bool
+    ea_email: EmailStr | None = None
+    deferral_template: str | None = None
+
+
+class EASettingsOut(_Base):
+    id: str
+    persona_id: str
+    enabled: bool
+    ea_email: str | None
+    deferral_template: str
+
+
+# ---- Campaign ----
+
+
+class StartCampaign(_Base):
+    persona_id: str
+    lead: LeadIn
+
+
 class CampaignOut(_Base):
     id: str
     persona_id: str

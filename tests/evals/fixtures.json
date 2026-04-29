@@ -1,0 +1,46 @@
+{
+  "leads": [
+    {
+      "id": "high-priority-funding",
+      "persona": {"name": "Alex", "title": "Head of Partnerships", "company": "AICRM"},
+      "lead": {
+        "company_name": "Greystar",
+        "industry": "Real Estate",
+        "decision_maker": "Jordan Price",
+        "position": "VP of RevOps",
+        "milestone": "Series B funding announcement"
+      },
+      "expect_priority": "high",
+      "expect_min_personalization": 80,
+      "expect_max_words": 250
+    },
+    {
+      "id": "medium-priority-hire",
+      "persona": {"name": "Alex", "title": "Head of Partnerships", "company": "AICRM"},
+      "lead": {
+        "company_name": "Acme Corp",
+        "industry": "SaaS",
+        "decision_maker": "Sam Taylor",
+        "position": "Director of Data",
+        "milestone": "hired a new head of engineering"
+      },
+      "expect_priority": "medium",
+      "expect_min_personalization": 80,
+      "expect_max_words": 250
+    },
+    {
+      "id": "high-priority-ipo",
+      "persona": {"name": "Alex", "title": "Head of Partnerships", "company": "AICRM"},
+      "lead": {
+        "company_name": "Beta Industries",
+        "industry": "Healthcare",
+        "decision_maker": "Dana Kim",
+        "position": "Chief Data Officer",
+        "milestone": "IPO pricing announced"
+      },
+      "expect_priority": "high",
+      "expect_min_personalization": 80,
+      "expect_max_words": 250
+    }
+  ]
+}

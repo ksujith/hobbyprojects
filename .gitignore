@@ -63,3 +63,6 @@ Thumbs.db
 secrets.json
 config.json
 .gstack/
+
+# Pair-programmer thinking log
+thinking.md

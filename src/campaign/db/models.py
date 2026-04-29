@@ -238,6 +238,36 @@ class LLMCall(Base):
 # ----------------------------- EASettings ---------------------------------
 
 
+class InboundMessage(Base):
+    """A reply (or bounce / OOO) received on an outbound campaign.
+
+    Phase 1 ingest: explicit `POST /api/campaigns/{id}/inbox/receive` (test,
+    demo, or downstream webhook from Postmark/SES). Phase 3+ would wire a
+    background IMAP puller into `workers/inbox_puller.py`.
+    """
+
+    __tablename__ = "inbound_messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    campaign_id: Mapped[str] = mapped_column(
+        ForeignKey("campaigns.id", ondelete="CASCADE"), index=True
+    )
+    from_email: Mapped[str] = mapped_column(String(256), index=True)
+    from_name: Mapped[str | None] = mapped_column(String(256))
+    subject: Mapped[str] = mapped_column(Text)
+    body: Mapped[str] = mapped_column(Text)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Classifier output
+    classification: Mapped[str] = mapped_column(String(32), index=True)   # positive_interest / needs_info / not_interested / bounce / out_of_office / other
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    needs_action: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    suggested_reply_draft_id: Mapped[str | None] = mapped_column(
+        ForeignKey("drafts.id"), default=None
+    )
+
+
 class EASettings(Base):
     __tablename__ = "ea_settings"
 

@@ -3,7 +3,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from campaign.api.routes import campaigns, dashboard, health, personas
+from campaign.api.routes import (
+    campaigns,
+    dashboard,
+    health,
+    inbox,
+    personas,
+    send,
+    settings,
+)
 from campaign.config import get_settings
 from campaign.logging import configure_logging, get_logger
 
@@ -20,7 +28,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Campaign v2 — B2B Outreach Agent", version="0.2.0", lifespan=lifespan)
 
+dashboard.mount_static(app)
+
 app.include_router(health.router)
 app.include_router(personas.router)
+app.include_router(settings.router)
 app.include_router(campaigns.router)
+app.include_router(inbox.router)
+app.include_router(send.router)
 app.include_router(dashboard.router)
