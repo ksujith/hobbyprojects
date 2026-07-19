@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from campaign.config import get_settings
 from campaign.schemas import LeadAnalysisIn, LeadIn
 from campaign.services import anthropic as svc
 
@@ -32,7 +33,7 @@ async def run(
     try:
         await svc.create_message(
             caller="outreach_drafter",
-            model="claude-opus-4-7",
+            model=get_settings().llm_synthesis_model,
             system=_SYSTEM,
             messages=[
                 {

@@ -37,6 +37,63 @@ async def index() -> FileResponse:
     return FileResponse(_WEB_DIR / "index.html")
 
 
+@router.get("/api/analytics", include_in_schema=False)
+async def analytics() -> JSONResponse:
+    """Funnel rollup for the Analytics tab: campaign volume by status/priority,
+    reply mix, average draft quality, and total spend. Read-only aggregates —
+    same shape/discipline as the cost ledger below."""
+
+    def _counts(rows: list[tuple[str, int]]) -> dict[str, int]:
+        return {str(k): int(n) for k, n in rows if k is not None}
+
+    async with session_scope() as db:
+        total_campaigns = int(
+            (await db.execute(select(func.count(m.Campaign.id)))).scalar() or 0
+        )
+        status_rows = (
+            await db.execute(
+                select(m.Campaign.status, func.count(m.Campaign.id)).group_by(m.Campaign.status)
+            )
+        ).all()
+        priority_rows = (
+            await db.execute(
+                select(m.Campaign.priority, func.count(m.Campaign.id)).group_by(m.Campaign.priority)
+            )
+        ).all()
+        reply_rows = (
+            await db.execute(
+                select(m.InboundMessage.classification, func.count(m.InboundMessage.id)).group_by(
+                    m.InboundMessage.classification
+                )
+            )
+        ).all()
+        avg_personalization, avg_sentiment, draft_count = (
+            await db.execute(
+                select(
+                    func.avg(m.Draft.personalization_score),
+                    func.avg(m.Draft.sentiment_score),
+                    func.count(m.Draft.id),
+                )
+            )
+        ).one()
+        total_cost = (
+            await db.execute(select(func.sum(m.LLMCall.cost_usd)))
+        ).scalar()
+
+    return JSONResponse(
+        {
+            "total_campaigns": total_campaigns,
+            "status_breakdown": _counts(status_rows),
+            "priority_breakdown": _counts(priority_rows),
+            "reply_breakdown": _counts(reply_rows),
+            "draft_count": int(draft_count or 0),
+            "avg_personalization": round(float(avg_personalization), 1) if avg_personalization is not None else None,
+            "avg_sentiment": round(float(avg_sentiment), 2) if avg_sentiment is not None else None,
+            "total_cost_usd": round(float(total_cost or 0), 6),
+        }
+    )
+
+
 @router.get("/api/cost", include_in_schema=False)
 async def cost() -> JSONResponse:
     async with session_scope() as db:

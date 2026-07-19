@@ -7,6 +7,7 @@ same `LeadAnalysisIn` schema via tool-use structured output.
 """
 from __future__ import annotations
 
+from campaign.config import get_settings
 from campaign.schemas import BANTScore, LeadAnalysisIn, LeadIn
 from campaign.services import anthropic as svc
 
@@ -15,7 +16,7 @@ async def run(lead: LeadIn) -> LeadAnalysisIn:
     try:
         await svc.create_message(
             caller="lead_analyzer",
-            model="claude-sonnet-4-6",
+            model=get_settings().llm_extraction_model,
             system=_SYSTEM,
             messages=[{"role": "user", "content": _user_prompt(lead)}],
             max_tokens=600,

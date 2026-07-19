@@ -86,3 +86,31 @@ async def test_full_campaign_lifecycle(client: AsyncClient) -> None:
     # "Best," → "Cheers," and length should be ≤ d1 after the shorten pass.
     assert "Cheers," in d2["body"] or "Best," not in d2["body"]
     assert len(d2["body"]) <= len(d1["body"])
+
+
+@pytest.mark.asyncio
+async def test_analytics_funnel(client: AsyncClient) -> None:
+    # Empty state.
+    r = await client.get("/api/analytics")
+    assert r.status_code == 200
+    assert r.json()["total_campaigns"] == 0
+
+    # Run one campaign to completion.
+    persona = (await client.post("/api/personas", json=PERSONA_PAYLOAD)).json()
+    camp = (
+        await client.post(
+            "/api/campaigns", json={"persona_id": persona["id"], "lead": LEAD_PAYLOAD}
+        )
+    ).json()
+    for _ in range(40):
+        status = (await client.get(f"/api/campaigns/{camp['id']}")).json()["status"]
+        if status in ("succeeded", "failed"):
+            break
+        await asyncio.sleep(0.05)
+
+    a = (await client.get("/api/analytics")).json()
+    assert a["total_campaigns"] == 1
+    assert a["status_breakdown"].get("succeeded") == 1
+    assert a["draft_count"] >= 1
+    # Demo-mode drafts carry a personalization score, so the average is populated.
+    assert a["avg_personalization"] is not None

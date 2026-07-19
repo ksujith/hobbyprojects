@@ -52,7 +52,7 @@ async def _lookup(company_name: str) -> tuple[str, list[dict]]:
     try:
         await svc.create_message(
             caller="company_lookup",
-            model="claude-sonnet-4-6",
+            model=get_settings().llm_extraction_model,
             messages=[{"role": "user", "content": f"Find public background on {company_name}."}],
             max_tokens=400,
             # Phase 3: add tools=[{"type": "web_search_20250305", "name": "web_search"}]

@@ -168,6 +168,45 @@ code {
 }
 .ea-form input[type="email"] { grid-column: 2 / 3; }
 
+/* agent workflow trace */
+.flow { padding: 10px 18px; }
+.flow-node {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px;
+  align-items: start; padding: 9px 0; position: relative;
+}
+.flow-node + .flow-node { border-top: 1px dashed var(--line); }
+.flow-node > div { display: grid; gap: 1px; }
+.flow-node b { font-size: 13px; }
+.flow-node .meta { margin: 0; }
+.flow-dot {
+  width: 10px; height: 10px; border-radius: 99px; margin-top: 5px;
+  background: var(--muted);
+}
+.flow-dot.succeeded { background: var(--good); box-shadow: 0 0 6px rgba(94, 224, 163, 0.5); }
+.flow-dot.failed    { background: var(--bad); }
+.flow-dot.running   { background: var(--accent); box-shadow: 0 0 6px rgba(126, 224, 255, 0.5); }
+.flow-time { white-space: nowrap; }
+.ok { color: var(--good); font-weight: 600; }
+.ko { color: var(--warn); font-weight: 600; }
+
+/* analytics stat tiles */
+.stats {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+  margin-bottom: 14px;
+}
+.stat {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 14px; text-align: center;
+}
+.stat b { display: block; font-size: 22px; letter-spacing: -0.01em; color: var(--accent); }
+.stat span {
+  color: var(--muted); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+@media (max-width: 900px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* sim buttons */
 .sim-row {
   display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;

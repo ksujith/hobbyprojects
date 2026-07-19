@@ -26,6 +26,7 @@ function activateTab(name) {
   // Lazy-load tab data each time it's shown.
   if (name === "inbox") loadInbox();
   if (name === "personas") loadPersonasTab();
+  if (name === "analytics") loadAnalytics();
   if (name === "cost") loadCost();
 }
 
@@ -60,7 +61,7 @@ async function loadRuns() {
     ${rows
       .map(
         (c) => `<tr class="row" data-id="${c.id}">
-      <td><code>${c.id.slice(0, 8)}</code></td>
+      <td>${c.company_name ? `<b>${esc(c.company_name)}</b>` : `<code>${c.id.slice(0, 8)}</code>`}</td>
       <td>${c.priority ? `<span class="pill ${c.priority}">${c.priority}</span>` : "—"}</td>
       <td><span class="pill ${c.status}">${c.status}</span></td>
     </tr>`
@@ -71,12 +72,48 @@ async function loadRuns() {
   );
 }
 
+function taskDetail(d) {
+  if (!d) return "";
+  const bits = [];
+  if (d.score != null)
+    bits.push(
+      `score <b>${d.score}</b> · ${d.passed ? '<span class="ok">✓ passed</span>' : '<span class="ko">✗ needs work</span>'}`
+    );
+  if (d.critique) bits.push(esc(d.critique));
+  if (d.worker) bits.push(`routed to <b>${esc(d.worker)}</b>`);
+  if (d.priority) bits.push(`priority <b>${esc(d.priority)}</b> · fit ${(d.fit_score * 100).toFixed(0)}%`);
+  if (d.word_count != null) bits.push(`${d.word_count} words`);
+  if (d.company) bits.push(esc(d.company));
+  return bits.length ? ` — ${bits.join(" · ")}` : "";
+}
+
+function renderWorkflow(tasks) {
+  if (!tasks.length) return "";
+  return `
+    <h2>Agent workflow</h2>
+    <div class="card flow">
+      ${tasks
+        .map(
+          (t) => `<div class="flow-node">
+        <span class="flow-dot ${t.status}"></span>
+        <div>
+          <b>${esc(t.agent_name)}</b>
+          <span class="meta">${esc(t.task_name)}${taskDetail(t.details)}</span>
+        </div>
+        <span class="meta flow-time">${(t.started_at ?? "").replace("T", " ").slice(11, 19)}</span>
+      </div>`
+        )
+        .join("")}
+    </div>`;
+}
+
 async function loadCampaignDetail(id) {
-  const [camp, analysis, drafts, inbox] = await Promise.all([
+  const [camp, analysis, drafts, inbox, tasks] = await Promise.all([
     j(`/api/campaigns/${id}`),
     j(`/api/campaigns/${id}/analysis`),
     j(`/api/campaigns/${id}/drafts`),
     j(`/api/campaigns/${id}/inbox`),
+    j(`/api/campaigns/${id}/tasks`),
   ]);
 
   $("#campaign-detail").innerHTML = `
@@ -84,6 +121,8 @@ async function loadCampaignDetail(id) {
     <div class="card">
       <div class="meta">id: <code>${camp.id}</code> · created ${camp.created_at?.replace("T", " ").slice(0, 16)}</div>
     </div>
+
+    ${renderWorkflow(tasks)}
 
     <h2>Lead analysis (BANT)</h2>
     <div class="card">
@@ -384,6 +423,55 @@ async function loadPersonasTab() {
   );
 }
 
+// ─────────────────────────── Analytics tab ───────────────────────────
+
+function breakdownTable(obj, labelHead, order) {
+  const keys = order
+    ? order.filter((k) => k in obj)
+    : Object.keys(obj).sort((a, b) => obj[b] - obj[a]);
+  if (!keys.length) return '<div class="empty">no data yet</div>';
+  const total = keys.reduce((s, k) => s + obj[k], 0) || 1;
+  return `<table><thead><tr><th>${labelHead}</th><th>Count</th><th>Share</th></tr></thead><tbody>
+    ${keys
+      .map(
+        (k) => `<tr>
+      <td><span class="pill ${k}">${esc(k.replace(/_/g, " "))}</span></td>
+      <td>${obj[k]}</td>
+      <td>${((obj[k] / total) * 100).toFixed(0)}%</td>
+    </tr>`
+      )
+      .join("")}</tbody></table>`;
+}
+
+function statTile(value, label) {
+  return `<div class="stat"><b>${value}</b><span>${label}</span></div>`;
+}
+
+async function loadAnalytics() {
+  const a = await j("/api/analytics");
+  const pct = (v) => (v == null ? "—" : `${v}%`);
+  $("#analytics-stats").innerHTML =
+    statTile(a.total_campaigns, "campaigns") +
+    statTile(a.status_breakdown.succeeded ?? 0, "succeeded") +
+    statTile(a.draft_count, "drafts") +
+    statTile(a.avg_personalization == null ? "—" : a.avg_personalization, "avg personalization") +
+    statTile(a.avg_sentiment == null ? "—" : a.avg_sentiment.toFixed(2), "avg sentiment") +
+    statTile(`$${a.total_cost_usd.toFixed(4)}`, "total LLM cost");
+
+  $("#analytics-status").innerHTML = breakdownTable(a.status_breakdown, "Status", [
+    "succeeded",
+    "running",
+    "pending",
+    "failed",
+  ]);
+  $("#analytics-priority").innerHTML = breakdownTable(a.priority_breakdown, "Priority", [
+    "high",
+    "medium",
+    "low",
+  ]);
+  $("#analytics-replies").innerHTML = breakdownTable(a.reply_breakdown, "Classification");
+}
+
 // ─────────────────────────── Cost tab ───────────────────────────
 
 async function loadCost() {
@@ -414,7 +502,7 @@ async function loadCost() {
   await loadCost();    // populates cost badge at top
   // Route from the URL hash so reloads preserve tab.
   const hash = location.hash.replace("#", "");
-  if (["campaigns", "inbox", "personas", "cost"].includes(hash)) activateTab(hash);
+  if (["campaigns", "inbox", "personas", "analytics", "cost"].includes(hash)) activateTab(hash);
   // First-visit UX: if no personas, open the create-persona panel.
   if (!personas.length) showPersonaPanel(true);
 })();

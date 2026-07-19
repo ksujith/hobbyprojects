@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from campaign.config import get_settings
 from campaign.services import anthropic as svc
 
 
@@ -20,7 +21,7 @@ async def run(*, subject: str, body: str, critique: str) -> RefinedDraft:
     try:
         await svc.create_message(
             caller="draft_refiner",
-            model="claude-sonnet-4-6",
+            model=get_settings().llm_extraction_model,
             system=_SYSTEM,
             messages=[{"role": "user", "content": f"CRITIQUE: {critique}\n\nDRAFT:\n{body}"}],
             max_tokens=800,

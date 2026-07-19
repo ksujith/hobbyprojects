@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from sqlalchemy import select
 
@@ -24,11 +24,7 @@ from campaign.db.session import session_scope
 # Keep the stopword list small and anglo — this is a style cue, not a
 # classifier. The LLM does the rest.
 _STOPWORDS = frozenset(
-    """
-    a an and are as at be been being by for from has have he her him his i in is it its of on
-    or our she that the their them there these they this to us was we were will with you your
-    hi hey dear best cheers regards thanks thank
-    """.split()
+    ["a", "an", "and", "are", "as", "at", "be", "been", "being", "by", "for", "from", "has", "have", "he", "her", "him", "his", "i", "in", "is", "it", "its", "of", "on", "or", "our", "she", "that", "the", "their", "them", "there", "these", "they", "this", "to", "us", "was", "we", "were", "will", "with", "you", "your", "hi", "hey", "dear", "best", "cheers", "regards", "thanks", "thank"]
 )
 
 _TOKEN = re.compile(r"[a-zA-Z][a-zA-Z'-]{1,}")
@@ -47,7 +43,7 @@ class StyleProfile:
         parts: list[str] = []
         if self.draft_count == 0:
             return ""
-        parts.append(f"Target ≈{int(round(self.avg_word_count))} words.")
+        parts.append(f"Target ≈{round(self.avg_word_count)} words.")
         if self.dominant_signoff:
             parts.append(f"Sign off with: '{self.dominant_signoff}'.")
         if self.top_bigrams:

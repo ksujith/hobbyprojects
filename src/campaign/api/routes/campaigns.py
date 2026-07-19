@@ -7,7 +7,14 @@ from sqlalchemy.orm import selectinload
 
 from campaign.db import models as m
 from campaign.db.session import get_session
-from campaign.schemas import CampaignOut, DraftOut, LeadAnalysisOut, RefineDraftIn, StartCampaign
+from campaign.schemas import (
+    AgentTaskOut,
+    CampaignOut,
+    DraftOut,
+    LeadAnalysisOut,
+    RefineDraftIn,
+    StartCampaign,
+)
 from campaign.workflow.pipeline import refine_latest_draft, run_campaign
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
@@ -42,8 +49,16 @@ async def list_campaigns(
     db: AsyncSession = Depends(get_session),
 ) -> list[m.Campaign]:
     rows = (
-        await db.execute(select(m.Campaign).order_by(m.Campaign.created_at.desc()).limit(limit))
+        await db.execute(
+            select(m.Campaign)
+            .options(selectinload(m.Campaign.lead))
+            .order_by(m.Campaign.created_at.desc())
+            .limit(limit)
+        )
     ).scalars().all()
+    # Denormalize the lead's company onto each row for the runs table.
+    for c in rows:
+        c.company_name = c.lead.company_name if c.lead else None
     return list(rows)
 
 
@@ -78,6 +93,21 @@ async def get_analysis(campaign_id: str, db: AsyncSession = Depends(get_session)
         "pain_points": row.pain_points,
         "value_opportunities": row.value_opportunities,
     }
+
+
+@router.get("/{campaign_id}/tasks", response_model=list[AgentTaskOut])
+async def list_tasks(
+    campaign_id: str, db: AsyncSession = Depends(get_session)
+) -> list[m.AgentTask]:
+    """Workflow trace: every agent node that ran for this campaign, in order."""
+    rows = (
+        await db.execute(
+            select(m.AgentTask)
+            .where(m.AgentTask.campaign_id == campaign_id)
+            .order_by(m.AgentTask.started_at)
+        )
+    ).scalars().all()
+    return list(rows)
 
 
 @router.get("/{campaign_id}/drafts", response_model=list[DraftOut])

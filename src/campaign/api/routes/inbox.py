@@ -15,11 +15,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from campaign.agents.draft_refiner import run as refine_run
+from campaign.agents.reply_workers import ReplyContext
 from campaign.db import models as m
 from campaign.db.session import get_session
 from campaign.schemas import DraftOut, InboundMessageIn, InboundMessageOut
 from campaign.services import inbox_gateway
+from campaign.workflow.reply_graph import run_reply_graph
 
 router = APIRouter(tags=["inbox"])
 
@@ -134,10 +135,11 @@ async def suggest_reply(
 ) -> m.Draft:
     """Produce a new draft version that responds to an inbound message.
 
-    Strategy: grab the latest outbound draft on the thread (which set the
-    context and signature), and apply the inbound as a critique via
-    `DraftRefiner`. Phase 2 will switch to a dedicated reply-drafter call
-    that takes the full thread history.
+    Router → worker graph: the inbound's classification (set at ingest by
+    `reply_classifier`) routes to a specialized worker — meeting_proposer,
+    info_responder, objection_handler, followup_scheduler, or the generic
+    fallback. The dispatch is recorded as an AgentTask so the campaign's
+    workflow trace shows which node produced the reply.
     """
     msg = await db.get(m.InboundMessage, message_id)
     if msg is None:
@@ -154,28 +156,42 @@ async def suggest_reply(
     if latest is None:
         raise HTTPException(400, "no prior draft on this campaign to reply to")
 
-    critique = (
-        f"The prospect replied (classification: {msg.classification}). Write a "
-        f"short reply that addresses this message:\n\n"
-        f"Subject: {msg.subject}\n\n{msg.body}"
-    )
+    camp = await db.get(m.Campaign, msg.campaign_id)
+    lead = await db.get(m.Lead, camp.lead_id)
+    persona = await db.get(m.Persona, camp.persona_id)
 
-    refined = await refine_run(
-        subject=latest.subject, body=latest.body, critique=critique
+    ctx = ReplyContext(
+        prospect_first=lead.decision_maker.split()[0],
+        persona_name=persona.name,
+        persona_title=persona.title,
+        persona_company=persona.company,
+        inbound_subject=msg.subject,
+        inbound_body=msg.body,
+        prev_subject=latest.subject,
     )
+    worker_name, reply = await run_reply_graph(msg.classification, ctx)
 
     new = m.Draft(
         campaign_id=msg.campaign_id,
         version=latest.version + 1,
-        subject=f"Re: {latest.subject}",
-        body=refined.body,
+        subject=reply.subject,
+        body=reply.body,
         personalization_score=latest.personalization_score,
         sentiment_score=latest.sentiment_score,
-        word_count=len(refined.body.split()),
+        word_count=len(reply.body.split()),
         ea_cc_applied=latest.ea_cc_applied,
         ea_cc_email=latest.ea_cc_email,
     )
     db.add(new)
+    db.add(
+        m.AgentTask(
+            campaign_id=msg.campaign_id,
+            agent_name="ReplyRouter",
+            task_name=f"{msg.classification} → {worker_name}",
+            status="succeeded",
+            details={"worker": worker_name, "classification": msg.classification},
+        )
+    )
     await db.flush()
 
     msg.suggested_reply_draft_id = new.id

@@ -21,6 +21,7 @@ dependencies = [
     "httpx>=0.28",
     "tenacity>=9.0",
     "arq>=0.26",
+    "langgraph>=0.2",
     "redis>=5.2",
     "anthropic>=0.42",
     "prometheus-client>=0.21",

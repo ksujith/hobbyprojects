@@ -101,13 +101,6 @@ class RefineDraftIn(_Base):
     critique: Annotated[str, Field(min_length=3, max_length=500)]
 
 
-# ---- Campaign ----
-
-class StartCampaign(_Base):
-    persona_id: str
-    lead: LeadIn
-
-
 # ---- Inbound message (emailbox) ----
 
 
@@ -154,6 +147,19 @@ class EASettingsOut(_Base):
     deferral_template: str
 
 
+# ---- AgentTask (workflow trace) ----
+
+
+class AgentTaskOut(_Base):
+    id: str
+    agent_name: str
+    task_name: str
+    status: str
+    started_at: datetime
+    completed_at: datetime | None
+    details: dict
+
+
 # ---- Campaign ----
 
 
@@ -166,6 +172,7 @@ class CampaignOut(_Base):
     id: str
     persona_id: str
     lead_id: str
+    company_name: str | None = None   # populated on list reads for the runs table
     status: Literal["pending", "running", "succeeded", "failed"]
     priority: Literal["high", "medium", "low"] | None
     created_at: datetime

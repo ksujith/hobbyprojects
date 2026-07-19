@@ -29,5 +29,5 @@ async def warm_company_cache(company_name: str) -> None:
     try:
         await company_lookup.get_or_fetch(company_name)
         log.info("prefetch.company_warmed", company=company_name)
-    except Exception:  # noqa: BLE001
+    except Exception:
         log.warning("prefetch.company_failed", company=company_name, exc_info=True)

@@ -13,6 +13,8 @@ from campaign.api.routes import (
     settings,
 )
 from campaign.config import get_settings
+from campaign.db.models import Base
+from campaign.db.session import engine
 from campaign.logging import configure_logging, get_logger
 
 configure_logging()
@@ -21,6 +23,12 @@ log = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # Self-bootstrap: create any missing tables so a fresh install (new
+    # machine, empty volume) works with zero manual steps. Idempotent —
+    # existing tables are left untouched. Alembic takes over when real
+    # migrations land.
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     log.info("app.startup", env=get_settings().env, demo_mode=get_settings().campaign_demo_mode)
     yield
     log.info("app.shutdown")

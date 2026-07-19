@@ -18,19 +18,31 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from campaign.agents import (
-    calendaring_detector,
-    draft_refiner,
-    lead_analyzer,
-    outreach_drafter,
-)
+from campaign.agents import calendaring_detector, draft_refiner, lead_analyzer
 from campaign.db import models as m
 from campaign.db.session import session_scope
 from campaign.logging import get_logger
 from campaign.schemas import LeadIn
 from campaign.tools import company_lookup
+from campaign.workflow.draft_graph import run_draft_graph
 
 log = get_logger(__name__)
+
+
+async def _record_task(
+    campaign_id: str, agent_name: str, task_name: str, details: dict
+) -> None:
+    async with session_scope() as db:
+        db.add(
+            m.AgentTask(
+                campaign_id=campaign_id,
+                agent_name=agent_name,
+                task_name=task_name,
+                status="succeeded",
+                completed_at=datetime.now(UTC),
+                details=details,
+            )
+        )
 
 
 async def run_campaign(campaign_id: str) -> None:
@@ -95,6 +107,10 @@ async def run_campaign(campaign_id: str) -> None:
 
         # --- Step 3: Company lookup ------------------------------------
         profile = await company_lookup.get_or_fetch(lead_in.company_name)
+        await _record_task(
+            campaign_id, "CompanyLookup", "cached web profile",
+            {"company": lead_in.company_name, "cached": profile.summary is not None},
+        )
 
         # --- Step 4: EA scheduling detection (pre-draft heuristic) -----
         ea_line: str | None = None
@@ -107,31 +123,44 @@ async def run_campaign(campaign_id: str) -> None:
                 ea_line = ea.deferral_template.format(ea_name=ea.ea_email or "my assistant")
                 ea_applied = True
 
-        # --- Step 5: Draft v1 ------------------------------------------
-        draft_content = await outreach_drafter.run(
-            lead=lead_in,
-            analysis=analysis,
-            persona_name=persona_name,
-            persona_title=persona_title,
-            persona_company=persona_company,
-            company_summary=profile.summary,
-            ea_deferral_line=ea_line,
+        # --- Step 5: Draft quality loop (LangGraph StateGraph) ---------
+        # Code → Test → Fix → Repeat: drafter → reviewer —needs_fix→ refiner
+        # → reviewer …, bounded by settings.draft_review_max_iterations.
+        # Nodes are pure; we persist the accumulated drafts + trace here.
+        final = await run_draft_graph(
+            campaign_id,
+            {
+                "lead": lead_in,
+                "analysis": analysis,
+                "persona_name": persona_name,
+                "persona_title": persona_title,
+                "persona_company": persona_company,
+                "company_summary": profile.summary,
+                "ea_deferral_line": ea_line,
+            },
         )
 
         async with session_scope() as db:
-            db.add(
-                m.Draft(
-                    campaign_id=campaign_id,
-                    version=1,
-                    subject=draft_content.subject,
-                    body=draft_content.body,
-                    personalization_score=draft_content.personalization_score,
-                    sentiment_score=draft_content.sentiment_score,
-                    word_count=draft_content.word_count,
-                    ea_cc_applied=ea_applied,
-                    ea_cc_email=ea_email,
+            for d in final["drafts"]:
+                db.add(
+                    m.Draft(
+                        campaign_id=campaign_id,
+                        ea_cc_applied=ea_applied,
+                        ea_cc_email=ea_email,
+                        **d,
+                    )
                 )
-            )
+            for t in final["trace"]:
+                db.add(
+                    m.AgentTask(
+                        campaign_id=campaign_id,
+                        status="succeeded",
+                        completed_at=datetime.now(UTC),
+                        **t,
+                    )
+                )
+
+        async with session_scope() as db:
             # Mark succeeded.
             camp = await db.get(m.Campaign, campaign_id)
             camp.status = m.CampaignStatus.succeeded

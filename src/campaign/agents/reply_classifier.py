@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
+from campaign.config import get_settings
 from campaign.services import anthropic as svc
 
 ReplyClass = Literal[
@@ -115,7 +116,7 @@ async def classify_with_llm_fallback(subject: str, body: str) -> Classification:
     try:
         await svc.create_message(
             caller="reply_classifier",
-            model="claude-sonnet-4-6",
+            model=get_settings().llm_extraction_model,
             system="Classify this B2B outreach reply into one of: "
                    "positive_interest, needs_info, not_interested, bounce, out_of_office, other.",
             messages=[{"role": "user", "content": f"Subject: {subject}\n\n{body}"}],
